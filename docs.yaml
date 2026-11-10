@@ -1,0 +1,293 @@
+spec_version: 2
+project: YellowPen
+updated: '2026-10-20'
+status: core_engine_mvp_implemented
+implementation:
+  guide: README.md
+  public_source_entry: src/index.ts
+  runnable_project_schema: src/core/project.ts
+  timing_storage: seconds
+  requirements_are_not_project_manifest: true
+  expanded_blueprint_complete: false
+  validation_reports: [artifacts/browser-report.json, artifacts/production-report.json]
+companion: docs.md
+purpose: Turn document screenshots into customizable documentary video inserts.
+product_direction:
+  workflow: [import_or_paste, select_regions, customize, preview, export]
+  processing: local_by_default
+  simple_controls: [preset, region, color, duration, framing, export]
+  advanced_controls: [texture, displacement, geometry, blending, timing]
+  no_required_ai: true
+  original_source_pixels_preserved: true
+export:
+  defaults:
+    aspect_ratio: '16:9'
+    width: 1920
+    height: 1080
+    fps: 60
+    duration_seconds: 6
+    container: mp4
+    codec: h264
+    audio: none
+    background: opaque
+  aspect_ratios: ['16:9', '9:16', '1:1']
+  frame_rates: [24, 25, 30, 60, 120]
+  rate_policy:
+    baseline_release_gate: 1080p60
+    advanced_capability_gated: [1080p120]
+    later_benchmarks: [4k60, 4k120]
+    allow_saved_user_default: true
+    require_exact_configuration_probe: true
+    require_short_encode_and_playback_check: true
+    silent_downgrade: false
+    generate_motion_at_output_rate: true
+    preserve_seconds_when_changing_fps: true
+    timing_rounding_tolerance_output_frames: 1
+    preview_rate_independent_of_export: true
+  suggested_1080p60_bitrate_mbps: [20, 35]
+  bitrate_status: benchmark_starting_range
+  required_feedback: [ratio, dimensions, fps, progress, cancel, retry]
+  filename_contains: [project_name, dimensions, fps]
+  unsupported_route: Preserve project and explain tested browser or later desktop export options.
+selection:
+  modes: [single_line, grouped_lines, body_rectangle]
+  coordinate_space: orientation_normalized_source_pixels
+  manual_always_available: true
+  optional_assistance: [line_detection, ocr_word_boxes]
+  per_region_overrides: true
+  grouped_style_inheritance: true
+  ordered_beats: true
+  undo_redo: true
+region_style:
+  dim:
+    targets: [none, inside_selection, outside_selection]
+    default_target: none
+    amount_range: [0.0, 1.0]
+    independent_of_marker_opacity: true
+  tint:
+    enabled_default: false
+    target: selected_source_region
+    color: editable
+    strength_range: [0.0, 1.0]
+    independent_of_marker_color: true
+  marker:
+    color_default: '#FFE34D'
+    opacity_default: 0.45
+    opacity_range: [0.0, 1.0]
+    geometry:
+      units: source_pixels
+      controls: [thickness, padding, angle, corner_radius, edge_feather]
+      endpoints:
+        start: draggable_source_point
+        end: draggable_source_point
+        independent_of_evidence_rectangle: true
+        allow_overhang: true
+        reject_degenerate_path: true
+      start_cap_options: [flat, round, chisel]
+      end_cap_options: [flat, round, chisel]
+      trim:
+        units: normalized_path_length
+        default_start: 0.0
+        default_end: 1.0
+        constraint: '0 <= start < end <= 1'
+    texture:
+      presets: [solid, felt_tip, dry_marker, streaked]
+      controls: [strength, scale, rotation, seed]
+      strength_range: [0.0, 1.0]
+      imported_raster_texture: advanced
+      include_import_in_project_bundle: true
+      affects: marker_coverage_only
+      anchoring: source_space
+    displacement:
+      controls: [amount, wavelength, octaves, seed, evolution_speed]
+      amount_units: source_pixels
+      wavelength_units: source_pixels
+      targets: [edges, whole_marker_mask]
+      default_evolution_speed: 0.0
+      static_seeded_by_default: true
+      zero_amount_is_straight: true
+      limit_amount_relative_to_thickness: true
+      affects_source_document: false
+      animated_evolution: capability_and_performance_gated
+      time_basis: absolute_seconds
+    reveal:
+      controls: [start_time, duration, direction, easing]
+      directions: [start_to_end, end_to_start]
+      easings: [linear, ease_in, ease_out, ease_in_out, cubic_bezier]
+      default_easing: ease_in_out
+      spatial_radius_independent_of_easing: true
+      camera_easing_independent: true
+      multiline: sequential_length_weighted
+    blending:
+      modes: [normal, multiply, screen, overlay, difference, exclusion]
+      default: multiply
+      normal_canvas_operation: source-over
+      available_for_straight_and_textured_strokes: true
+      ordinary_blend_backdrop: current_composite
+  invert_under_stroke:
+    priority: expanded_mvp
+    implementation: White difference against original source patch through revealed mask.
+    full_coverage_formula: 'output_rgb = 1 - source_rgb'
+    partial_coverage_formula: 'output_rgb = (1 - a) * source_rgb + a * (1 - source_rgb)'
+    coverage_a: Combined reveal, texture, feather, and effect opacity.
+    affects: all_pixels_under_mask
+    overlapping_masks_in_one_beat: union_before_inversion
+    colored_difference_is_full_inversion: false
+  text_only_recolor:
+    priority: experimental
+    method: Luminance-derived glyph mask with threshold and softness.
+    controls: [glyph_color, threshold, softness, mask_preview]
+    source_text_retyped: false
+    limitations: [scans, illustrations, colored_text, complex_backgrounds, antialiased_edges]
+    fallback: Manual correction or ordinary marker/inversion effect.
+compositing:
+  order: [original_source, source_tint, dim_treatment, ordered_marker_effects, labels]
+  mask_pipeline: [geometry, texture_and_displacement, reveal, opacity, blend]
+  ordinary_overlap: explicit_region_layer_order
+  inversion_overlap: union_within_beat
+  render_preview_and_export_with_same_engine: true
+  no_unseeded_per_frame_randomness: true
+  cache_static_masks: true
+presets:
+  default: black_evidence_highlight
+  default_settings: {effect: invert, opacity: 1, radius: 0, texture: solid, outside_fade_color: "#FFFFFF", outside_fade_amount: 0.72}
+  built_in: [black_evidence_highlight, yellow_marker, spotlight, clean_underline, invert_under_stroke]
+  personal:
+    save: true
+    duplicate: true
+    per_region_copy: true
+    preserve_resolved_settings: true
+    versioned: true
+architecture:
+  ui: React_TypeScript_Vite
+  baseline_renderer: Canvas_2D
+  export: WebCodecs_with_Mediabunny
+  persistence: IndexedDB_and_portable_project_bundle
+  gpu_escalation: Profile animated whole-mask displacement before adding an offscreen shader.
+  desktop_path: Shared engine in Electron with validated local encoding.
+  project_data:
+    versioned_manifest: true
+    assets: [original_screenshot, imported_textures]
+    style_data: all_region_style_properties_and_overrides
+    timing: Frame indices plus output fps; recompute on fps changes to preserve seconds.
+    snapshot_before_export: true
+    reject_nonfinite_or_out_of_bounds_values: true
+scope:
+  expanded_mvp:
+    - 16:9 1080p60 export
+    - Manual text and body region selection
+    - Inside and outside dimming
+    - Source tint and independent marker colors
+    - Configurable start and end points with trim
+    - Radius, feather, thickness, angle, and independent caps
+    - Marker and camera easing controls
+    - Texture presets and custom raster textures
+    - Static seeded turbulence/displacement
+    - Blend modes and full inversion under stroke
+    - Personal presets, undo, autosave, and portable projects
+  gated_advanced: [1080p120, animated_displacement]
+  experimental: [text_only_recolor]
+  later: [4k_export, prores, alpha_export, desktop_distribution, evidence_card]
+  excluded: [full_video_editor, accounts, cloud_rendering, generative_effects, audio_editing]
+implementation_order:
+  - Prove six-second 1080p60 MP4 with marker, dimming, and Difference inversion.
+  - Build selection UI, endpoints, colors, blend controls, and project saving.
+  - Add texture, static displacement, caps, radius, feather, easing, and presets.
+  - Probe 120 fps and animated displacement on intended devices and editors.
+  - Evaluate text-only recoloring separately using difficult fixtures.
+estimates:
+  status: engineering_estimates_not_measured
+  assumptions: One experienced developer, local processing, narrow initial browser target.
+  spike_working_days: [3, 5]
+  expanded_personal_mvp_total_weeks: [5, 8]
+  polished_browser_release_total_weeks: [9, 14]
+  advanced_style_working_days_within_mvp: [8, 12]
+acceptance:
+  - New project starts at 16:9, 1920x1080, 60 fps.
+  - A supported saved higher-fps default is restored without silent downgrade.
+  - Six-second 60 fps output has 360 frames; supported 120 fps output has 720.
+  - Moving sections are evaluated at output fps, not duplicated from a 30 fps render.
+  - Changing fps preserves timing within one output frame.
+  - Dim target and strength are independent of marker opacity and tint.
+  - Geometry, texture, displacement, easing, and blend settings survive undo and reopen.
+  - Same seed and time reproduce the same marker geometry and texture.
+  - Black and white fixture pixels invert correctly under full-coverage white Difference.
+  - Colored Difference is not mislabeled as full inversion.
+  - Overlaps do not double-invert within a beat.
+  - Preview and decoded export agree in geometry and effect order, allowing compression differences.
+  - Imported textures travel with portable projects.
+  - Export cancellation and retries release resources and preserve edits.
+  - Verify playback and scrubbing in QuickTime and the user's editor.
+  - Benchmark worst-case effects with bounded queues and memory.
+performance_targets:
+  status: unmeasured_targets
+  baseline: Record exact Apple Silicon Mac and browser during spike.
+  six_second_1080p60_export_seconds_max: 45
+  raw_frames_buffered: bounded_queue_never_entire_movie
+  preview: Smooth interactive playback; may reduce resolution independently of export.
+sources:
+  - title: Canvas compositing and blend modes
+    url: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+  - title: VideoEncoder configuration support
+    url: https://developer.mozilla.org/en-US/docs/Web/API/VideoEncoder/isConfigSupported_static
+  - title: Mediabunny output pipeline
+    url: https://mediabunny.dev/guide/writing-media-files
+  - title: Headroom Source Highlight
+    url: https://headroomapp.ai/tools/source-highlight
+
+text_spotlight_mvp:
+  status: implemented_local_mac
+  input: paste_or_drop_png_jpeg_or_manual_text
+  recognition: Apple_Vision_VNRecognizeTextRequest
+  architecture: localhost_vite_middleware_to_swift_stdin_stdout
+  privacy: no_cloud_ocr_no_image_files_written_by_helper
+  review: editable_text_required_before_selection
+  template: white_background_Arial_or_Georgia_preserved_line_breaks
+  effect: black_selected_words_grey_surroundings_red_animated_underline
+  export: 1920x1080_16_9_6_seconds_60fps_default_120fps_optional
+  selection: UTF16_offsets_mapped_to_wrapped_text_line_regions
+  limits:
+    image_bytes: 12582912
+    image_pixels: 25000000
+    text_characters: 12000
+    selected_lines: 32
+    ocr_timeout_seconds: 30
+  limitations:
+    - native_OCR_requires_local_macOS_helper_and_Command_Line_Tools
+    - static_hosts_support_manual_text_only
+    - OCR_words_and_reading_order_need_review
+    - source_layout_and_images_are_not_recreated
+    - MP4_codec_support_depends_on_browser_and_device
+
+reusable_templates:
+  built_in: [Classic, Juniorist, Nepali Comment]
+  custom_storage: browser_localStorage_30_named_presets
+  project_portability: applied_template_embedded_in_project_manifest
+  effects: [underline, marker, invert, spotlight]
+  controls: [color, roughness, distortion, radius, opacity, dim, padding, textWidth, lineSpacing, fontSize, font, zoom]
+  source_credit: optional_fixed_bottom_left
+  logo: optional_embedded_png_fixed_top_left
+  website_icon: explicit_Google_favicon_lookup_hostname_only_with_upload_fallback
+  verification: icons_do_not_verify_source_authenticity
+  native_language_support: determined_by_installed_Apple_Vision_not_template_name
+
+release_2026_10_23:
+  supersedes: earlier_UI_native_OCR_and_1080p_export_defaults
+  interface: single_page_monochrome_editor_no_landing_page
+  camera: static_no_zoom
+  preview: 3840x2160_backing_store_with_2x_text_rasterization
+  output: fixed_3840x2160_60fps_6_seconds_H264_no_dimension_controls
+  recognition: self_hosted_Tesseract_JS_WASM_English_in_browser
+  hosting: static_HTTPS_dist_directory_including_ocr_assets
+  image_uploads_to_OCR_service: false
+  engine_loading: lazy_on_image_import
+  effect_demo: same_renderer_user_text_selection_on_hover_or_keyboard_focus
+  default_demo: sample_document_before_upload
+  tests: 31_unit_tests_and_production_build_plus_manual_browser_flow
+  verified_export: 3840x2160_60fps_360_frames_6_seconds_ffprobe
+  limits:
+    - English_OCR_review_required
+    - hardware_browser_must_support_4K60_H264_encoding
+    - no_silent_quality_downgrade
+    - no_cross_browser_certification_or_public_deployment_yet
+    - website_logos_are_uploaded_or_media_name_text_no_remote_lookup
