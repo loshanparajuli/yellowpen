@@ -198,7 +198,7 @@ Once the animation preview is open, change fonts, padding, size, spacing or othe
 Click **Paste screenshot** to read a copied PNG/JPEG image from your clipboard. Your browser may request clipboard access. If access is unavailable or denied, use ⌘V / Ctrl+V, drag and drop, or choose a file instead. Copy the actual image, not only its URL.
 
 All screenshot imports offer two choices:
-- **Use as-is:** preserve the original screenshot and place it on a backdrop. No OCR is run. This mode exports a static screenshot composition as a video; text-selection highlight animation is available in the OCR mode.
+- **Use as-is:** preserve the original screenshot and place it on a backdrop. No OCR is run. Drag a box over a word, line or area to animate a highlight without OCR. Add more boxes in reading order, choose Underline, Highlighter or Invert, and adjust color and draw time. Undo region removes the last box; Clear removes all boxes. With no boxes, export produces a static composition.
 - **Extract text:** recognize the words, review/edit them, then select text to highlight using the existing editor.
 
 As-is mode offers Paper, Sand, Slate, Midnight and Lavender gradients, a blurred copy of the screenshot, or a custom solid color. Backdrop space controls the gap around the screenshot. Corner radius and shadow shape its presentation. Background blur applies only to the Blurred image preset; the foreground screenshot stays sharp. All adjustments update the preview automatically. Set a 2–20 second video length and export at 4K/60 FPS. Save editable project preserves the original image and backdrop settings. Extract text with OCR switches to the text workflow whenever needed.

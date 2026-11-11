@@ -1,5 +1,8 @@
 import './style.css';
-import { backdropSchema } from '../render/backdrop';
+import { textTiming } from '../text/timing';
+import { styleSchema } from '../core/project';
+import type { Region } from '../core/project';
+import { backdropSchema, screenshotRect } from '../render/backdrop';
 import { createProject } from '../core/project';
 import { decodeImage } from '../storage/image';
 import { presets,templateSchema,readTemplates,saveTemplate,logoData } from '../text/template';
@@ -20,6 +23,7 @@ document.querySelector('#app')!.innerHTML=`
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 let template:TextTemplate=structuredClone(presets.Classic);
 const sheet=$('sheet'), input=$<HTMLTextAreaElement>('text'), canvas=$<HTMLCanvasElement>('preview');
+let screenshotRegions:Region[]=[];
 let screenshotBlob:Blob|undefined,screenshotWidth=0,screenshotHeight=0,backdrop=backdropSchema.parse({});
 let incomingImage:Blob|undefined,incomingUrl:string|undefined;
 let text=sample,start=0,end=0,renderer:Renderer|undefined,bitmap:ImageBitmap|undefined,result:{project:Project;image:Blob}|undefined;
@@ -51,6 +55,11 @@ async function refreshPreview(){
   const built=screenshotBlob ? (()=>{
    const project=createProject(screenshotWidth,screenshotHeight);project.output={width:3840,height:2160,fps:60,bitrate:50_000_000};project.camera.enabled=false;project.duration=template.videoDuration;
    Object.assign(project.beats[0],{start:0,reveal:.1,hold:project.duration-.1});project.screenshotDocument=structuredClone(backdrop);
+   if(screenshotRegions.length){
+    project.screenshotHighlights=true;project.beats[0].regions=structuredClone(screenshotRegions);
+    const timing=textTiming(project.duration,template.highlightDuration);Object.assign(project.beats[0],{start:timing.start,reveal:timing.reveal,hold:timing.hold});
+    project.beats[0].style=styleSchema.parse({effect:template.effect,color:template.color,opacity:template.opacity,blend:template.effect==='marker'?'multiply':'source-over',texture:'solid',radius:template.radius,dim:{target:'none',amount:0}});
+   }
    return {project,image:screenshotBlob};
   })() : await composeText({text,start,end,fontSize:template.fontSize,font:template.font,template:structuredClone(template)});
   if(version!==revision)return;
@@ -61,9 +70,9 @@ async function refreshPreview(){
   renderer=new Renderer(built.project,decoded,canvas);
   show('select-all',false);show('paper',false);show('text',false);show('apply',false);show('preview',true);show('animate',false);
   for(const id of ['back','play','export','save'])show(id,true);
-  if(screenshotBlob){show('back',false);show('play',false);$('selection').textContent='Original screenshot · no text extraction';}
+  if(screenshotBlob){show('back',false);show('play',screenshotRegions.length>0);$('selection').textContent=screenshotRegions.length?`${screenshotRegions.length} region${screenshotRegions.length===1?'':'s'} · drag to add another`:'Drag a box over the words or area to highlight.';}
   $('stage').textContent='PREVIEW · 4K / 60 FPS';if(!exportAbort)status('');
-  if(replay&&!screenshotBlob)play();else renderer.render(Math.round(built.project.duration*built.project.output.fps)-1);
+  if(replay)play();else renderer.render(Math.round(built.project.duration*built.project.output.fps)-1);
   saveLocal(built.project,built.image).catch(()=>{if(version===revision)status('Preview ready. Local autosave is unavailable; use Save editable project.');});
  }catch(e){if(version===revision)status((e as Error).message);}
  finally{previewBusy=false;if(previewQueued){clearTimeout(previewTimer);previewTimer=setTimeout(()=>void refreshPreview(),100);}}
@@ -118,8 +127,10 @@ $<HTMLInputElement>('logo-file').onchange=e=>{const target=e.target as HTMLInput
 $('logo-drop').ondrop=e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer?.files[0])void setLogo(e.dataTransfer.files[0]);};
 $('clear-logo').onclick=()=>{logoRevision++;delete template.logo;changed();};
 const backdropNames={paper:'Paper',sand:'Sand',slate:'Slate',midnight:'Midnight',lavender:'Lavender',image:'Blurred image',custom:'Solid color'};
-$('screenshot-controls').innerHTML=`<div class="section-title">Backdrop</div><div class="backdrop-grid">${Object.entries(backdropNames).map(([key,name])=>`<button data-backdrop="${key}" class="backdrop-swatch ${key}" aria-label="${name}"><span>${name}</span></button>`).join('')}</div><label class="setting" id="background-color-row" hidden>Color<input id="background-color" type="color" value="#e8e6e1"></label><div class="range-controls">${[['distance','Backdrop space',0,30,1],['blur','Background blur',0,80,1],['radius','Corner radius',0,60,1],['shadow','Shadow',0,100,1]].map(([key,label,min,max,step])=>`<label for="backdrop-${key}">${label}<output id="backdrop-value-${key}"></output></label><input aria-label="${label}" id="backdrop-${key}" type="range" min="${min}" max="${max}" step="${step}">`).join('')}</div><label class="setting">Video length<input id="screenshot-duration" type="number" min="2" max="20" step=".1" value="6" aria-label="Screenshot video length"></label><small>Seconds · 4K / 60 FPS</small>`;
+$('screenshot-controls').innerHTML=`<div class="section-title">Highlight a region</div><small>Drag a box over each line or area. Add multiple boxes in reading order.</small><label class="setting">Effect<select id="image-effect"><option value="underline">Underline</option><option value="marker">Highlighter</option><option value="invert">Invert</option></select></label><label class="setting">Color<input type="color" id="image-ink"></label><label class="setting">Draw time<input id="image-reveal" type="number" min=".2" max="18" step=".1" aria-label="Highlight draw time"></label><div class="region-actions"><button id="undo-region">Undo region</button><button id="clear-regions">Clear</button></div><div class="section-title">Backdrop</div><div class="backdrop-grid">${Object.entries(backdropNames).map(([key,name])=>`<button data-backdrop="${key}" class="backdrop-swatch ${key}" aria-label="${name}"><span>${name}</span></button>`).join('')}</div><label class="setting" id="background-color-row" hidden>Color<input id="background-color" type="color" value="#e8e6e1"></label><div class="range-controls">${[['distance','Backdrop space',0,30,1],['blur','Background blur',0,80,1],['radius','Corner radius',0,60,1],['shadow','Shadow',0,100,1]].map(([key,label,min,max,step])=>`<label for="backdrop-${key}">${label}<output id="backdrop-value-${key}"></output></label><input aria-label="${label}" id="backdrop-${key}" type="range" min="${min}" max="${max}" step="${step}">`).join('')}</div><label class="setting">Video length<input id="screenshot-duration" type="number" min="2" max="20" step=".1" value="6" aria-label="Screenshot video length"></label><small>Seconds · 4K / 60 FPS</small>`;
 function syncBackdrop(){
+ $<HTMLSelectElement>('image-effect').value=template.effect; $<HTMLInputElement>('image-ink').value=template.color;$<HTMLInputElement>('image-reveal').value=String(template.highlightDuration);
+
  document.querySelectorAll<HTMLButtonElement>('[data-backdrop]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.backdrop===backdrop.preset)));
  for(const key of ['distance','blur','radius','shadow'] as const){$<HTMLInputElement>('backdrop-'+key).value=String(backdrop[key]);$('backdrop-value-'+key).textContent=String(backdrop[key]);}
  $<HTMLInputElement>('backdrop-blur').disabled=backdrop.preset!=='image';
@@ -128,18 +139,45 @@ function syncBackdrop(){
  $<HTMLInputElement>('screenshot-duration').value=String(template.videoDuration);
 }
 function setImageMode(active:boolean){$('screenshot-controls').hidden=!active;$('template-controls').hidden=active;$('edit').textContent=active?'Extract text with OCR':'Edit text';if(active)syncBackdrop();else syncControls();}
-async function useScreenshot(file:Blob){
+async function useScreenshot(file:Blob,preserveRegions=false){
  ocr?.abort();const version=++revision;
  try{const decoded=await decodeImage(file);if(version!==revision){decoded.close();return;}
- screenshotWidth=decoded.width;screenshotHeight=decoded.height;decoded.close();screenshotBlob=file;setImageMode(true);requestPreview();
+ if(!preserveRegions)screenshotRegions=[];screenshotWidth=decoded.width;screenshotHeight=decoded.height;decoded.close();screenshotBlob=file;setImageMode(true);requestPreview();
  }catch(e){status((e as Error).message);}
 }
-async function restoreScreenshot(project:Project,image:Blob){backdrop=backdropSchema.parse(project.screenshotDocument);template.videoDuration=project.duration;await useScreenshot(image);}
+async function restoreScreenshot(project:Project,image:Blob){backdrop=backdropSchema.parse(project.screenshotDocument);template.videoDuration=project.duration;screenshotRegions=project.screenshotHighlights?structuredClone(project.beats[0].regions):[];if(project.screenshotHighlights){template.effect=project.beats[0].style.effect;template.color=project.beats[0].style.color;template.opacity=project.beats[0].style.opacity;template.highlightDuration=project.beats[0].reveal;}await useScreenshot(image,true);}
 function closeImport(){ $<HTMLDialogElement>('image-choice').close();if(incomingUrl)URL.revokeObjectURL(incomingUrl);incomingUrl=undefined;incomingImage=undefined; }
 async function offerImage(file:Blob){
  try{const image=await decodeImage(file);image.close();if(incomingUrl)URL.revokeObjectURL(incomingUrl);incomingImage=file;incomingUrl=URL.createObjectURL(file);$<HTMLImageElement>('import-thumbnail').src=incomingUrl;$<HTMLDialogElement>('image-choice').showModal();}
  catch(e){status((e as Error).message);}
 }
+
+let dragStart:{x:number;y:number}|undefined;
+function imagePoint(e:PointerEvent){
+ const box=canvas.getBoundingClientRect(),scale=Math.min(box.width/3840,box.height/2160),ox=box.left+(box.width-3840*scale)/2,oy=box.top+(box.height-2160*scale)/2;
+ const r=screenshotRect(screenshotWidth,screenshotHeight,3840,2160,backdrop.distance);
+ return {x:((e.clientX-ox)/scale-r.x)*screenshotWidth/r.width,y:((e.clientY-oy)/scale-r.y)*screenshotHeight/r.height};
+}
+function dragRegion(e:PointerEvent){const p=imagePoint(e),a=dragStart!;const x=Math.max(0,Math.min(screenshotWidth,p.x)),y=Math.max(0,Math.min(screenshotHeight,p.y));return {x:Math.min(a.x,x),y:Math.min(a.y,y),width:Math.abs(x-a.x),height:Math.abs(y-a.y)};}
+canvas.addEventListener('pointerdown',e=>{
+ if(!screenshotBlob||previewBusy||previewQueued||exportAbort)return;const p=imagePoint(e);
+ if(p.x<0||p.y<0||p.x>screenshotWidth||p.y>screenshotHeight)return;
+ e.preventDefault();cancelAnimationFrame(raf);dragStart=p;canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{if(!dragStart||!renderer||!result)return;
+ renderer.render(Math.round(result.project.duration*60)-1);const region=dragRegion(e),r=screenshotRect(screenshotWidth,screenshotHeight,canvas.width,canvas.height,backdrop.distance),scale=r.width/screenshotWidth,c=canvas.getContext('2d')!;
+ c.save();c.strokeStyle='#2563eb';c.lineWidth=6;c.setLineDash([18,12]);c.strokeRect(r.x+region.x*scale,r.y+region.y*scale,region.width*scale,region.height*scale);c.restore();
+});
+canvas.addEventListener('pointerup',e=>{if(!dragStart)return;const region=dragRegion(e);dragStart=undefined;canvas.releasePointerCapture(e.pointerId);
+ if(region.width>=2&&region.height>=2&&screenshotRegions.length<32){screenshotRegions.push(region);requestPreview(true);}else{renderer?.render(Math.round((result?.project.duration??6)*60)-1);status(screenshotRegions.length>=32?'Use up to 32 regions.':'Drag a larger box to select a region.');}
+});
+canvas.addEventListener('pointercancel',()=>{dragStart=undefined;if(result)renderer?.render(Math.round(result.project.duration*60)-1);});
+$('undo-region').onclick=()=>{screenshotRegions.pop();requestPreview();};
+$('clear-regions').onclick=()=>{screenshotRegions=[];requestPreview();};
+$('image-effect').onchange=()=>{template=effectSettings($<HTMLSelectElement>('image-effect').value as TextTemplate['effect']);syncBackdrop();requestPreview(true);};
+$('image-ink').oninput=()=>{template.color=$<HTMLInputElement>('image-ink').value;requestPreview();};
+$('image-reveal').onchange=()=>{const n=$<HTMLInputElement>('image-reveal').valueAsNumber;if(Number.isFinite(n)&&n>=.2&&n<=18){template.highlightDuration=n;requestPreview(true);}else syncBackdrop();};
+
 $('dismiss-import').onclick=closeImport;
 $('image-choice').addEventListener('cancel',()=>closeImport());
 $('use-original').onclick=()=>{const file=incomingImage;closeImport();if(file)void useScreenshot(file);};

@@ -1,3 +1,4 @@
+import { visualGuide } from './visual-guide.mjs';
 /** One canonical origin for HTML metadata and all discovery files. */
 export function seoAssets(raw = process.env.SITE_URL || 'https://yellowpen.fromsilicon.com') {
   const url = new URL(raw);
@@ -37,7 +38,7 @@ Powered by [From Silicon](https://fromsilicon.com).
 
 > A browser-based image text highlighter for turning screenshot text into animated videos.
 
-Yellowpen extracts English text from PNG/JPEG images using browser OCR, rebuilds it in a selectable text template, and animates selected words. Effects include underline, marker, invert and focus. Output is a 2–20 second 3840 × 2160 MP4 at 60 FPS on compatible WebCodecs browsers. Templates can be customized and saved locally. OCR and rendering run locally in the browser. The editor is intended for tablets and laptops, with a minimum 768px viewport. OCR mode reconstructs text; Use as-is preserves the original screenshot with customizable backdrops as a static video. Do not describe OCR as native macOS OCR or promise export support on every device.
+Yellowpen extracts English text from PNG/JPEG images using browser OCR, rebuilds it in a selectable text template, and animates selected words. Effects include underline, marker, invert and focus. Output is a 2–20 second 3840 × 2160 MP4 at 60 FPS on compatible WebCodecs browsers. Templates can be customized and saved locally. OCR and rendering run locally in the browser. The editor is intended for tablets and laptops, with a minimum 768px viewport. OCR mode reconstructs text; Use as-is preserves the original screenshot with customizable backdrops with optional drag-selected region highlights. Do not describe OCR as native macOS OCR or promise export support on every device.
 
 ## Product
 - [Editor](${origin}/): Import a screenshot or enter text, select a phrase, animate and export.
@@ -47,13 +48,11 @@ Yellowpen extracts English text from PNG/JPEG images using browser OCR, rebuilds
 
 This file provides product context; it is not an access policy or a ranking guarantee.
 `;
-  const escape = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-  const content = guide.split('\n\n').map(p => p.startsWith('# ') ? `<h1>${escape(p.slice(2))}</h1>` : p.startsWith('## ') ? `<h2>${escape(p.slice(3))}</h2>` : `<p>${escape(p).replace(/\[([^\]]+)\]\((https:\/\/[^)]+)\)/g,'<a href="$2">$1</a>').replaceAll('\n','<br>')}</p>`).join('\n');
   return { origin, files: {
     'robots.txt': `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`,
     'sitemap.xml': `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/guide.html</loc></url></urlset>`,
     'llms.txt':llms, 'llm.txt':llms, 'guide.md':guide,
-    'guide.html':`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>how to animate screenshot text | yellowpen guide</title><meta name="description" content="Learn how to extract screenshot text, animate a highlight, save templates and export 4K 60 FPS videos with yellowpen."><link rel="canonical" href="${origin}/guide.html"><link rel="icon" href="/favicon.svg"><style>body{max-width:760px;margin:48px auto;padding:0 24px;font:17px/1.7 system-ui;color:#222;background:#fff}h1{font-size:36px;letter-spacing:-1px}h2{font-size:22px;margin-top:36px}a{color:inherit}nav{display:flex;justify-content:space-between;font-size:14px}img{vertical-align:middle;margin-right:8px}footer{border-top:1px solid #ddd;margin-top:40px;padding-top:20px;font-size:13px}</style></head><body><nav><a href="/"><img src="/favicon.svg" width="24" height="24" alt="">yellowpen</a><a href="/">open editor ↗</a></nav><main>${content}</main><footer><a href="https://fromsilicon.com">powered by fromsilicon.com</a></footer></body></html>`
+    'guide.html':visualGuide(origin)
   }};
 }
 export function seoPlugin() {

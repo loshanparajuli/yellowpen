@@ -14,3 +14,11 @@ it('round trips editable screenshot styling and rejects unsafe settings',()=>{
  expect(parseProject(JSON.parse(JSON.stringify(p))).screenshotDocument?.blur).toBe(50);
  expect(()=>backdropSchema.parse({distance:60})).toThrow();expect(()=>backdropSchema.parse({color:'url(https://bad)'})).toThrow();
 });
+it('preserves source-relative highlight regions when backdrop spacing changes',()=>{
+ const p=createProject(1200,630);p.screenshotDocument=backdropSchema.parse({distance:10});p.screenshotHighlights=true;
+ p.beats[0].regions=[{x:120,y:150,width:420,height:40}];
+ const saved=parseProject(JSON.parse(JSON.stringify(p)));saved.screenshotDocument!.distance=25;
+ expect(parseProject(saved).beats[0].regions).toEqual(p.beats[0].regions);
+ for(const distance of [0,10,25,30]){const r=screenshotRect(1200,630,3840,2160,distance);const x=r.x+120*r.width/1200;expect((x-r.x)*1200/r.width).toBeCloseTo(120);}
+ expect(parseProject({...p,screenshotHighlights:undefined}).screenshotHighlights).toBe(false);
+});

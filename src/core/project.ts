@@ -44,6 +44,7 @@ export const projectSchema = z.strictObject({
   camera: z.strictObject({ enabled: z.boolean(), moveDuration: finite.min(0.05).max(5), maxScale: finite.min(0.1).max(4), easing: easingSchema }),
   beats: z.array(beatSchema).min(1).max(16),
   screenshotDocument: backdropSchema.optional(),
+  screenshotHighlights: z.boolean().default(false),
   textDocument: z.strictObject({text:z.string().min(1).max(12000), start:z.number().int().min(0), end:z.number().int().positive(),fontSize:finite.min(36).max(100),font:z.enum(['sans','serif']),template:templateSchema.optional()}).optional(),
 }).superRefine((p, ctx) => {
   const fail = (message: string) => ctx.addIssue({ code: 'custom', message });

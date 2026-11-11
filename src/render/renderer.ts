@@ -1,4 +1,4 @@
-import { drawScreenshot } from './backdrop';
+import { drawScreenshot, screenshotRect } from './backdrop';
 import type { Project, Region, Style } from '../core/project';
 import { parseProject } from '../core/project';
 import { evaluateFrame, noise, strokeFor } from '../core/timeline';
@@ -55,8 +55,8 @@ export class Renderer {
   private screenshotReady = false;
   constructor(project: Project, private readonly source: CanvasImageSource, readonly canvas: Surface) {
     this.project = parseProject(project);
-    this.mask = makeSurface(project.screenshotDocument ? 1 : canvas.width, project.screenshotDocument ? 1 : canvas.height);
-    this.layer = makeSurface(project.screenshotDocument ? 1 : canvas.width, project.screenshotDocument ? 1 : canvas.height);
+    this.mask = makeSurface(project.screenshotDocument && !project.screenshotHighlights ? 1 : canvas.width, project.screenshotDocument && !project.screenshotHighlights ? 1 : canvas.height);
+    this.layer = makeSurface(project.screenshotDocument && !project.screenshotHighlights ? 1 : canvas.width, project.screenshotDocument && !project.screenshotHighlights ? 1 : canvas.height);
     this.original = makeSurface(canvas.width, canvas.height);
   }
   render(frame: number) {
@@ -65,11 +65,12 @@ export class Renderer {
     const ctx = context(this.canvas), mask = context(this.mask), layer = context(this.layer), original = context(this.original);
     if(p.screenshotDocument){
       if(!this.screenshotReady){drawScreenshot(original,this.source,p.source.width,p.source.height,width,height,p.screenshotDocument);this.screenshotReady=true;}
-      clear(ctx,width,height);ctx.drawImage(this.original,0,0);return;
+      if(!p.screenshotHighlights){clear(ctx,width,height);ctx.drawImage(this.original,0,0);return;}
     }
-    const transform = (c: Context) => c.setTransform(state.camera.scale * width / p.output.width, 0, 0, state.camera.scale * height / p.output.height, state.camera.x * width / p.output.width, state.camera.y * height / p.output.height);
-    clear(original, width, height); original.fillStyle = p.textDocument ? '#ffffff' : '#e9e7e1'; original.fillRect(0, 0, width, height);
-    transform(original); original.drawImage(this.source, 0, 0, p.source.width, p.source.height); if(p.textDocument?.template?.logo){original.fillStyle='#fff';original.fillRect(0,0,320*p.source.width/1920,100*p.source.width/1920);} original.resetTransform();
+    const r=p.screenshotDocument?screenshotRect(p.source.width,p.source.height,width,height,p.screenshotDocument.distance):undefined;
+    const transform = (c: Context) => r ? c.setTransform(r.width/p.source.width,0,0,r.height/p.source.height,r.x,r.y) : c.setTransform(state.camera.scale * width / p.output.width, 0, 0, state.camera.scale * height / p.output.height, state.camera.x * width / p.output.width, state.camera.y * height / p.output.height);
+    if(!p.screenshotDocument){clear(original, width, height); original.fillStyle = p.textDocument ? '#ffffff' : '#e9e7e1'; original.fillRect(0, 0, width, height);
+    transform(original); original.drawImage(this.source, 0, 0, p.source.width, p.source.height); if(p.textDocument?.template?.logo){original.fillStyle='#fff';original.fillRect(0,0,320*p.source.width/1920,100*p.source.width/1920);} original.resetTransform();}
     clear(ctx, width, height); ctx.drawImage(this.original, 0, 0);
     // Source treatments precede all marker layers. Regions form a union, including overlaps.
     for (const { beat, visible } of state.beats) {
