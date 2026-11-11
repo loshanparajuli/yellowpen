@@ -5,10 +5,10 @@ export function seoAssets(raw = process.env.SITE_URL || 'https://yellowpen.froms
   const origin = url.origin;
   const guide = `# How to use yellowpen
 
-Yellowpen is an image text highlighter that turns screenshot text into short animated videos. It reconstructs recognized text in a clean template; it does not preserve the screenshot’s exact layout.
+Yellowpen is an image text highlighter that turns screenshot text into short animated videos. Choose OCR to reconstruct recognized text in a clean template, or Use as-is to preserve the original screenshot on a customizable backdrop.
 
 ## How do I animate text in a screenshot?
-1. Open the editor on a laptop or tablet. Drop or paste a PNG/JPEG screenshot, or choose Paste or edit text.
+1. Open the editor on a laptop or tablet. Click Paste screenshot, drop a PNG/JPEG, or choose Edit text. Choose Extract text for animated highlights, or Use as-is for a screenshot with a backdrop.
 2. Review the recognized words. Browser OCR currently uses an English model; correct errors before animating.
 3. Select a phrase in the document. Choose Underline, Highlighter, Black block, or Focus. Hover over an effect to preview it with your text.
 4. Choose a template, or open the custom controls to adjust spacing, color, roughness and distortion. Optional source text and uploaded media logos are supported.
@@ -37,7 +37,7 @@ Powered by [From Silicon](https://fromsilicon.com).
 
 > A browser-based image text highlighter for turning screenshot text into animated videos.
 
-Yellowpen extracts English text from PNG/JPEG images using browser OCR, rebuilds it in a selectable text template, and animates selected words. Effects include underline, marker, invert and focus. Output is a 2–20 second 3840 × 2160 MP4 at 60 FPS on compatible WebCodecs browsers. Templates can be customized and saved locally. OCR and rendering run locally in the browser. The editor is intended for tablets and laptops, with a minimum 768px viewport. It does not preserve the original screenshot layout. Do not describe OCR as native macOS OCR or promise export support on every device.
+Yellowpen extracts English text from PNG/JPEG images using browser OCR, rebuilds it in a selectable text template, and animates selected words. Effects include underline, marker, invert and focus. Output is a 2–20 second 3840 × 2160 MP4 at 60 FPS on compatible WebCodecs browsers. Templates can be customized and saved locally. OCR and rendering run locally in the browser. The editor is intended for tablets and laptops, with a minimum 768px viewport. OCR mode reconstructs text; Use as-is preserves the original screenshot with customizable backdrops as a static video. Do not describe OCR as native macOS OCR or promise export support on every device.
 
 ## Product
 - [Editor](${origin}/): Import a screenshot or enter text, select a phrase, animate and export.

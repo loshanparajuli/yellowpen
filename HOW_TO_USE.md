@@ -192,3 +192,13 @@ Use Timing → Video duration to set 2–20 seconds. Highlight draw sets how lon
 
 ### Live preview updates
 Once the animation preview is open, change fonts, padding, size, spacing or other settings and the preview updates automatically. You do not need to click Animate again. It shows the finished highlight so you can judge the layout; use Replay to watch the motion. Export becomes available as soon as the updated preview is ready. Before the first animation, the selectable document updates directly as you adjust text controls.
+
+## Paste a screenshot or keep the original image
+
+Click **Paste screenshot** to read a copied PNG/JPEG image from your clipboard. Your browser may request clipboard access. If access is unavailable or denied, use ⌘V / Ctrl+V, drag and drop, or choose a file instead. Copy the actual image, not only its URL.
+
+All screenshot imports offer two choices:
+- **Use as-is:** preserve the original screenshot and place it on a backdrop. No OCR is run. This mode exports a static screenshot composition as a video; text-selection highlight animation is available in the OCR mode.
+- **Extract text:** recognize the words, review/edit them, then select text to highlight using the existing editor.
+
+As-is mode offers Paper, Sand, Slate, Midnight and Lavender gradients, a blurred copy of the screenshot, or a custom solid color. Backdrop space controls the gap around the screenshot. Corner radius and shadow shape its presentation. Background blur applies only to the Blurred image preset; the foreground screenshot stays sharp. All adjustments update the preview automatically. Set a 2–20 second video length and export at 4K/60 FPS. Save editable project preserves the original image and backdrop settings. Extract text with OCR switches to the text workflow whenever needed.
